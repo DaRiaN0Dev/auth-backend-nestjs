@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
+import { createHash } from 'crypto';
 import type { Request } from 'express';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { EnvVariables } from '../../types/env.types';
@@ -29,6 +30,11 @@ import { AuthTokenService } from './auth-token.service';
 import { generateSecureToken } from './utils/secure-token.util';
 import { AuditService } from '../audit/audit.service';
 import { EmailService } from '../email/email.service';
+
+function hashIpAddress(ip: string | null | undefined): string | null {
+  if (!ip) return null;
+  return createHash('sha256').update(ip).digest('hex').substring(0, 16);
+}
 
 @Injectable()
 export class AuthService {
@@ -88,6 +94,14 @@ export class AuthService {
       throw new ForbiddenException('Account temporarily locked');
     }
 
+    if (user.status !== 'ACTIVE') {
+      await this.auditService.log('LOGIN_FAILED', {
+        userId: user.id,
+        metadata: { reason: 'ACCOUNT_INACTIVE', status: user.status },
+      });
+      throw new ForbiddenException('Account is not active');
+    }
+
     const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
 
     if (!isPasswordValid) {
@@ -131,8 +145,8 @@ export class AuthService {
     await this.auditService.log('LOGIN_SUCCESS', {
       userId: user.id,
       metadata: {
-        ipAddress: request.ip ?? null,
-        userAgent: request.headers['user-agent'] ?? null,
+        ipAddress: hashIpAddress(request.ip),
+        userAgent: request.headers['user-agent'] ? String(request.headers['user-agent']).substring(0, 100) : null,
       },
     });
 
@@ -185,8 +199,8 @@ export class AuthService {
     await this.auditService.log('LOGOUT', {
       userId: payload.sub,
       metadata: {
-        ipAddress: request.ip ?? null,
-        userAgent: request.headers['user-agent'] ?? null,
+        ipAddress: hashIpAddress(request.ip),
+        userAgent: request.headers['user-agent'] ? String(request.headers['user-agent']).substring(0, 100) : null,
       },
     });
     return { success: true };
@@ -208,8 +222,8 @@ export class AuthService {
     await this.auditService.log('LOGOUT_ALL', {
       userId,
       metadata: {
-        ipAddress: request.ip ?? null,
-        userAgent: request.headers['user-agent'] ?? null,
+        ipAddress: hashIpAddress(request.ip),
+        userAgent: request.headers['user-agent'] ? String(request.headers['user-agent']).substring(0, 100) : null,
       },
     });
     return { success: true };
@@ -287,8 +301,8 @@ export class AuthService {
     await this.auditService.log('EMAIL_VERIFIED', {
       userId: tokenRecord.userId,
       metadata: {
-        ipAddress: request.ip ?? null,
-        userAgent: request.headers['user-agent'] ?? null,
+        ipAddress: hashIpAddress(request.ip),
+        userAgent: request.headers['user-agent'] ? String(request.headers['user-agent']).substring(0, 100) : null,
       },
     });
     return { success: true };
@@ -372,8 +386,8 @@ export class AuthService {
     await this.auditService.log('PASSWORD_RESET', {
       userId: tokenRecord.userId,
       metadata: {
-        ipAddress: request.ip ?? null,
-        userAgent: request.headers['user-agent'] ?? null,
+        ipAddress: hashIpAddress(request.ip),
+        userAgent: request.headers['user-agent'] ? String(request.headers['user-agent']).substring(0, 100) : null,
       },
     });
     return { success: true };

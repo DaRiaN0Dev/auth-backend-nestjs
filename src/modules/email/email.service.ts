@@ -28,9 +28,9 @@ export class EmailService {
         html,
       });
 
-      this.logger.log(`Verification email sent to ${to}`);
+      this.logger.log(`Verification email sent`);
     } catch (error) {
-      this.logger.error(`Failed to send verification email to ${to}:`, error);
+      this.logger.error(`Failed to send verification email:`, error);
       throw error;
     }
   }

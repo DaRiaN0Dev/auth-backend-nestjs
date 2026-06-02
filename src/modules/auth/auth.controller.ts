@@ -42,6 +42,8 @@ export class AuthController {
   }
 
   @Post('refresh')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 20, ttl: seconds(60) } })
   @ApiOperation({ summary: 'Refresh access token using refresh token' })
   @ApiResponse({ status: 200, description: 'Token successfully refreshed', type: Object })
   @ApiResponse({ status: 401, description: 'Invalid or expired refresh token' })
@@ -56,6 +58,8 @@ export class AuthController {
   }
 
   @Post('logout')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 20, ttl: seconds(60) } })
   @ApiOperation({ summary: 'Logout current session' })
   @ApiResponse({ status: 200, description: 'Successfully logged out' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
@@ -69,8 +73,8 @@ export class AuthController {
     return this.authService.logout(refreshToken, request);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Post('logout-all')
+  @UseGuards(JwtAuthGuard, ThrottlerGuard)
+  @Throttle({ default: { limit: 10, ttl: seconds(60) } })
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Logout all sessions' })
   @ApiResponse({ status: 200, description: 'Successfully logged out from all sessions' })
@@ -78,8 +82,8 @@ export class AuthController {
     return this.authService.logoutAll(user.id, request);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Get('me')
+  @UseGuards(JwtAuthGuard, ThrottlerGuard)
+  @Throttle({ default: { limit: 100, ttl: seconds(60) } })
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiResponse({ status: 200, description: 'User profile retrieved', type: Object })
@@ -88,8 +92,8 @@ export class AuthController {
     return this.authService.me(user.id);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Get('sessions')
+  @UseGuards(JwtAuthGuard, ThrottlerGuard)
+  @Throttle({ default: { limit: 50, ttl: seconds(60) } })
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Get all active sessions' })
   @ApiResponse({ status: 200, description: 'Sessions retrieved', type: [Object] })
@@ -98,8 +102,8 @@ export class AuthController {
     return this.authService.getSessions(user.id);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Post('send-verification-email')
+  @UseGuards(JwtAuthGuard, ThrottlerGuard)
+  @Throttle({ default: { limit: 3, ttl: seconds(3600) } })
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Send email verification email' })
   @ApiResponse({ status: 200, description: 'Verification email sent' })
@@ -119,6 +123,8 @@ export class AuthController {
   }
 
   @Post('reset-password')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 5, ttl: seconds(60) } })
   @ApiOperation({ summary: 'Reset password with token' })
   @ApiResponse({ status: 200, description: 'Password successfully reset' })
   @ApiResponse({ status: 400, description: 'Invalid or expired token' })
@@ -127,6 +133,8 @@ export class AuthController {
   }
 
   @Post('verify-email')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 10, ttl: seconds(60) } })
   @ApiOperation({ summary: 'Verify email with token' })
   @ApiResponse({ status: 200, description: 'Email successfully verified' })
   @ApiResponse({ status: 400, description: 'Invalid or expired token' })

@@ -1,5 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Patch, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { Throttle, ThrottlerGuard, seconds } from '@nestjs/throttler';
 import { UserRole, UserStatus } from '@prisma/client';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -13,7 +14,8 @@ import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 
 @ApiTags('admin')
 @ApiBearerAuth('JWT-auth')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)
+@Throttle({ default: { limit: 50, ttl: seconds(60) } })
 @Roles(UserRole.ADMIN, UserRole.OWNER)
 @Controller('admin')
 export class AdminController {
@@ -38,7 +40,6 @@ export class AdminController {
     return this.adminService.getUser(id);
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.OWNER)
   @Patch('users/:id/role')
   @ApiOperation({ summary: 'Update user role (owner only)' })
@@ -54,7 +55,6 @@ export class AdminController {
     return this.adminService.updateRole(currentUser.id, id, dto.role);
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.OWNER)
   @Patch('users/:id/status')
   @ApiOperation({ summary: 'Update user status (owner only)' })
@@ -70,7 +70,6 @@ export class AdminController {
     return this.adminService.updateStatus(currentUser.id, id, dto.status);
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.OWNER)
   @Delete('users/:id')
   @ApiOperation({ summary: 'Delete user (owner only)' })

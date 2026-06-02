@@ -28,6 +28,7 @@ import { durationToMs } from './utils/duration.util';
 import { AuthTokenService } from './auth-token.service';
 import { generateSecureToken } from './utils/secure-token.util';
 import { AuditService } from '../audit/audit.service';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class AuthService {
@@ -36,6 +37,7 @@ export class AuthService {
     private readonly authTokenService: AuthTokenService,
     private readonly configService: ConfigService<EnvVariables, true>,
     private readonly auditService: AuditService,
+    private readonly emailService: EmailService,
   ) {}
 
   async register(dto: SignUpDto): Promise<AuthResponse> {
@@ -171,7 +173,7 @@ export class AuthService {
     };
   }
 
-  async logout(token: string): Promise<{ success: true }> {
+  async logout(token: string, request: Request): Promise<{ success: true }> {
     const payload = await this.verifyRefreshToken(token);
     const tokenRecord = await this.findValidStoredRefreshToken(payload.sub, token);
 
@@ -180,11 +182,17 @@ export class AuthService {
       data: { revokedAt: new Date() },
     });
 
-    await this.auditService.log('LOGOUT', { userId: payload.sub });
+    await this.auditService.log('LOGOUT', {
+      userId: payload.sub,
+      metadata: {
+        ipAddress: request.ip ?? null,
+        userAgent: request.headers['user-agent'] ?? null,
+      },
+    });
     return { success: true };
   }
 
-  async logoutAll(userId: string): Promise<{ success: true }> {
+  async logoutAll(userId: string, request: Request): Promise<{ success: true }> {
     const now = new Date();
 
     await this.prisma.$transaction([
@@ -197,14 +205,20 @@ export class AuthService {
       }),
     ]);
 
-    await this.auditService.log('LOGOUT_ALL', { userId });
+    await this.auditService.log('LOGOUT_ALL', {
+      userId,
+      metadata: {
+        ipAddress: request.ip ?? null,
+        userAgent: request.headers['user-agent'] ?? null,
+      },
+    });
     return { success: true };
   }
 
   async sendVerificationEmail(userId: string): Promise<{ success: true }> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, emailVerified: true },
+      select: { id: true, emailVerified: true, firstName: true, email: true },
     });
 
     if (!user) {
@@ -235,10 +249,16 @@ export class AuthService {
       }),
     ]);
 
+    await this.emailService.sendVerificationEmail(
+      user.email,
+      user.firstName,
+      token,
+    );
+
     return { success: true };
   }
 
-  async verifyEmail(dto: VerifyEmailDto): Promise<{ success: true }> {
+  async verifyEmail(dto: VerifyEmailDto, request: Request): Promise<{ success: true }> {
     const tokenRecord = await this.prisma.emailVerificationToken.findUnique({
       where: { token: dto.token },
       select: { id: true, userId: true, expiresAt: true },
@@ -264,7 +284,13 @@ export class AuthService {
       }),
     ]);
 
-    await this.auditService.log('EMAIL_VERIFIED', { userId: tokenRecord.userId });
+    await this.auditService.log('EMAIL_VERIFIED', {
+      userId: tokenRecord.userId,
+      metadata: {
+        ipAddress: request.ip ?? null,
+        userAgent: request.headers['user-agent'] ?? null,
+      },
+    });
     return { success: true };
   }
 
@@ -272,7 +298,7 @@ export class AuthService {
     const normalizedEmail = dto.email.trim().toLowerCase();
     const user = await this.prisma.user.findUnique({
       where: { email: normalizedEmail },
-      select: { id: true },
+      select: { id: true, firstName: true, email: true },
     });
 
     if (!user) {
@@ -299,10 +325,16 @@ export class AuthService {
       }),
     ]);
 
+    await this.emailService.sendPasswordResetEmail(
+      user.email,
+      user.firstName,
+      token,
+    );
+
     return { success: true };
   }
 
-  async resetPassword(dto: ResetPasswordDto): Promise<{ success: true }> {
+  async resetPassword(dto: ResetPasswordDto, request: Request): Promise<{ success: true }> {
     const tokenRecord = await this.prisma.passwordResetToken.findUnique({
       where: { token: dto.token },
       select: { id: true, userId: true, expiresAt: true },
@@ -337,7 +369,13 @@ export class AuthService {
       }),
     ]);
 
-    await this.auditService.log('PASSWORD_RESET', { userId: tokenRecord.userId });
+    await this.auditService.log('PASSWORD_RESET', {
+      userId: tokenRecord.userId,
+      metadata: {
+        ipAddress: request.ip ?? null,
+        userAgent: request.headers['user-agent'] ?? null,
+      },
+    });
     return { success: true };
   }
 

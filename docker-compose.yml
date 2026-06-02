@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: auth_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: auth_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: auth_backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/auth_db
+      PORT: 3000
+      NODE_ENV: production
+      JWT_ACCESS_SECRET: super-secret-access
+      JWT_REFRESH_SECRET: super-secret-refresh
+      ACCESS_TOKEN_EXPIRES_IN: 15m
+      REFRESH_TOKEN_EXPIRES_IN: 30d
+      APP_URL: http://localhost:3000
+      FRONTEND_URL: http://localhost:5173
+      RESEND_API_KEY: re_xxxxxxxxxxxxxxxxxxxxxxxx
+      EMAIL_FROM: noreply@yourdomain.com
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

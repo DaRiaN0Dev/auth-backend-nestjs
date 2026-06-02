@@ -57,5 +57,9 @@ export function validateEnvironment(config: Record<string, unknown>): EnvVariabl
       config.REFRESH_TOKEN_EXPIRES_IN,
       'REFRESH_TOKEN_EXPIRES_IN',
     ),
+    APP_URL: readRequired(config.APP_URL, 'APP_URL'),
+    FRONTEND_URL: readRequired(config.FRONTEND_URL, 'FRONTEND_URL'),
+    RESEND_API_KEY: readRequired(config.RESEND_API_KEY, 'RESEND_API_KEY'),
+    EMAIL_FROM: readRequired(config.EMAIL_FROM, 'EMAIL_FROM'),
   };
 }

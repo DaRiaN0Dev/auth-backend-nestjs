@@ -103,7 +103,7 @@ export function verifyEmailTemplate(params: VerifyEmailTemplateParams): string {
 
     .button {
       display: inline-block;
-      background: #ffffff;
+      background: #0f0092 !important;
       color: #ffffff !important;
       text-decoration: none;
       padding: 14px 30px;

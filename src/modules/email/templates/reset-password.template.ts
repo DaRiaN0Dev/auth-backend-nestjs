@@ -101,8 +101,8 @@ export function resetPasswordTemplate(
     .button {
       display: inline-block;
       padding: 14px 32px;
-      background: #2563eb;
-      color: #ffffff;
+      background: #ffffff;
+      color: #ffffff !important;
       text-decoration: none;
       border-radius: 10px;
       font-size: 15px;

@@ -3,9 +3,7 @@ export interface VerifyEmailTemplateParams {
   actionUrl: string;
 }
 
-export function verifyEmailTemplate(
-  params: VerifyEmailTemplateParams,
-): string {
+export function verifyEmailTemplate(params: VerifyEmailTemplateParams): string {
   const { name, actionUrl } = params;
 
   return `
@@ -130,7 +128,7 @@ export function verifyEmailTemplate(
     }
 
     .fallback a {
-      color: #2563eb;
+      color: #ffffff;
       word-break: break-all;
       text-decoration: none;
     }

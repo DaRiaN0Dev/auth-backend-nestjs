@@ -142,7 +142,7 @@ export function resetPasswordTemplate(
     }
 
     .fallback a {
-      color: #2563eb;
+      color: #ffffff;
       text-decoration: none;
       word-break: break-all;
     }

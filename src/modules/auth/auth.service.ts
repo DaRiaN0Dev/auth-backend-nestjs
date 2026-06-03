@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -38,6 +39,8 @@ function hashIpAddress(ip: string | null | undefined): string | null {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly authTokenService: AuthTokenService,
@@ -68,6 +71,12 @@ export class AuthService {
         passwordHash,
       },
     });
+
+    try {
+      await this.sendVerificationEmail(createdUser.id);
+    } catch (error) {
+      this.logger.error(`Failed to send verification email after registration:`, error);
+    }
 
     return { user: this.toSafeUser(createdUser) };
   }

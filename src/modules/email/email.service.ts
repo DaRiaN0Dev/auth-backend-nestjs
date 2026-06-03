@@ -18,7 +18,7 @@ export class EmailService {
 
   async sendVerificationEmail(to: string, name: string, token: string): Promise<void> {
     try {
-      const actionUrl = `${this.config.frontendUrl}/verify-email?token=${token}`;
+      const actionUrl = `${this.config.frontendUrl}/auth/verify-email?token=${token}`;
       const html = verifyEmailTemplate({ name, actionUrl });
 
       await this.resend.emails.send({
@@ -37,7 +37,7 @@ export class EmailService {
 
   async sendPasswordResetEmail(to: string, name: string, token: string): Promise<void> {
     try {
-      const actionUrl = `${this.config.frontendUrl}/reset-password?token=${token}`;
+      const actionUrl = `${this.config.frontendUrl}/auth/reset-password?token=${token}`;
       const html = resetPasswordTemplate({ name, actionUrl });
 
       await this.resend.emails.send({
